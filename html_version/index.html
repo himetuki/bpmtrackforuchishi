@@ -298,41 +298,41 @@
       </section>
 
       <!-- 音频播放控制 -->
-      <section class=”mb-10”>
-        <div class=”bg-card rounded-3xl p-6 shadow-lg border border-white/5”>
-          <div class=”text-center mb-8”>
-            <h3 class=”text-lg font-bold tracking-tight”>音频播放控制</h3>
-            <div class=”flex justify-center gap-1.5 mt-3”>
-              <div id=”beat-indicator-1” class=”w-2 h-2 rounded-full bg-secondary/30”></div>
-              <div id=”beat-indicator-2” class=”w-2 h-2 rounded-full bg-secondary/30 delay-150”></div>
-              <div id=”beat-indicator-3” class=”w-2 h-2 rounded-full bg-secondary/30 delay-300”></div>
+      <section class="mb-10">
+        <div class="bg-card rounded-3xl p-6 shadow-lg border border-white/5">
+          <div class="text-center mb-8">
+            <h3 class="text-lg font-bold tracking-tight">音频播放控制</h3>
+            <div class="flex justify-center gap-1.5 mt-3">
+              <div id="beat-indicator-1" class="w-2 h-2 rounded-full bg-secondary/30"></div>
+              <div id="beat-indicator-2" class="w-2 h-2 rounded-full bg-secondary/30 delay-150"></div>
+              <div id="beat-indicator-3" class="w-2 h-2 rounded-full bg-secondary/30 delay-300"></div>
             </div>
           </div>
-          <div class=”flex justify-center gap-4”>
+          <div class="flex justify-center gap-4">
             <button
-              id=”play-btn”
-              onclick=”playAudio()”
-              class=”group w-14 h-14 flex items-center justify-center rounded-2xl bg-secondary/10 border border-secondary/30 text-secondary hover:bg-secondary/20 hover:shadow-glow transition-all”
+              id="play-btn"
+              onclick="playAudio()"
+              class="group w-14 h-14 flex items-center justify-center rounded-2xl bg-secondary/10 border border-secondary/30 text-secondary hover:bg-secondary/20 hover:shadow-glow transition-all"
             >
-              <i class=”fa fa-play text-xl”></i>
+              <i class="fa fa-play text-xl"></i>
             </button>
             <button
-              id=”pause-btn”
-              onclick=”pauseAudio()”
-              class=”group w-14 h-14 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-muted hover:bg-white/10 hover:border-white/20 transition-all”
+              id="pause-btn"
+              onclick="pauseAudio()"
+              class="group w-14 h-14 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-muted hover:bg-white/10 hover:border-white/20 transition-all"
             >
-              <i class=”fa fa-pause text-xl”></i>
+              <i class="fa fa-pause text-xl"></i>
             </button>
             <button
-              id=”stop-btn”
-              onclick=”stopAudio()”
-              class=”group w-14 h-14 flex items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:shadow-glow transition-all”
+              id="stop-btn"
+              onclick="stopAudio()"
+              class="group w-14 h-14 flex items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:shadow-glow transition-all"
             >
-              <i class=”fa fa-stop text-xl”></i>
+              <i class="fa fa-stop text-xl"></i>
             </button>
           </div>
-          <div class=”mt-6 text-center”>
-            <div id=”playback-status” class=”text-sm font-medium text-muted/70 min-h-[24px]”>
+          <div class="mt-6 text-center">
+            <div id="playback-status" class="text-sm font-medium text-muted/70 min-h-[24px]">
               未加载音频
             </div>
           </div>
@@ -340,81 +340,81 @@
       </section>
 
       <!-- 实时BPM监测 -->
-      <section class=”mb-10”>
-        <div class=”bg-card rounded-3xl p-6 shadow-lg border border-white/5”>
-          <div class=”flex flex-col xl:flex-row xl:items-center justify-between gap-5 mb-7”>
+      <section class="mb-10">
+        <div class="bg-card rounded-3xl p-6 shadow-lg border border-white/5">
+          <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-5 mb-7">
             <div>
-              <div class=”flex items-center gap-3 mb-2”>
-                <h3 class=”text-xl font-bold tracking-tight”>实时 BPM 监测</h3>
-                <span class=”px-2.5 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-medium”>β</span>
+              <div class="flex items-center gap-3 mb-2">
+                <h3 class="text-xl font-bold tracking-tight">实时 BPM 监测</h3>
+                <span class="px-2.5 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-medium">β</span>
               </div>
-              <p class=”text-sm text-muted/70 max-w-2xl leading-relaxed”>
+              <p class="text-sm text-muted/70 max-w-2xl leading-relaxed">
                 直接监听系统或麦克风输入，按桌面版算法实时估算音乐节奏。
               </p>
             </div>
-            <div class=”flex flex-wrap gap-3”>
+            <div class="flex flex-wrap gap-3">
               <button
-                id=”realtime-start-btn”
-                class=”inline-flex items-center gap-2 bg-secondary/10 border border-secondary/30 text-secondary px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-secondary/20 hover:shadow-glow transition-all”
+                id="realtime-start-btn"
+                class="inline-flex items-center gap-2 bg-secondary/10 border border-secondary/30 text-secondary px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-secondary/20 hover:shadow-glow transition-all"
               >
-                <i class=”fa fa-line-chart”></i>
+                <i class="fa fa-line-chart"></i>
                 <span>开始监测</span>
               </button>
               <button
-                id=”realtime-stop-btn”
-                class=”inline-flex items-center gap-2 bg-white/5 border border-white/10 text-muted px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-white/10 hover:border-white/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed”
+                id="realtime-stop-btn"
+                class="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-muted px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-white/10 hover:border-white/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 disabled
               >
-                <i class=”fa fa-stop”></i>
+                <i class="fa fa-stop"></i>
                 <span>停止</span>
               </button>
             </div>
           </div>
-          <div class=”grid grid-cols-1 xl:grid-cols-3 gap-6”>
-            <div class=”glass rounded-2xl p-6 text-center border border-white/5”>
-              <div class=”text-xs font-semibold text-muted uppercase tracking-widest mb-2”>实时 BPM</div>
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="glass rounded-2xl p-6 text-center border border-white/5">
+              <div class="text-xs font-semibold text-muted uppercase tracking-widest mb-2">实时 BPM</div>
               <div
-                id=”realtime-bpm-display”
-                class=”text-5xl font-bold text-secondary tracking-tight”
+                id="realtime-bpm-display"
+                class="text-5xl font-bold text-secondary tracking-tight"
               >
                 --
               </div>
               <div
-                class=”text-xs text-muted/50 mt-2”
-                id=”realtime-last-update”
+                class="text-xs text-muted/50 mt-2"
+                id="realtime-last-update"
               >
                 最近更新：--
               </div>
             </div>
-            <div class=”glass rounded-2xl p-5 border border-white/5”>
-              <div class=”flex items-center justify-between text-sm mb-3 pb-3 border-b border-white/5”>
-                <span class=”text-muted/70”>信号强度 (RMS)</span>
-                <span id=”realtime-rms-value” class=”font-mono font-semibold text-accent”>--</span>
+            <div class="glass rounded-2xl p-5 border border-white/5">
+              <div class="flex items-center justify-between text-sm mb-3 pb-3 border-b border-white/5">
+                <span class="text-muted/70">信号强度 (RMS)</span>
+                <span id="realtime-rms-value" class="font-mono font-semibold text-accent">--</span>
               </div>
-              <div class=”flex items-center justify-between text-sm mb-3 pb-3 border-b border-white/5”>
-                <span class=”text-muted/70”>采样窗口</span>
-                <span id=”realtime-window-info” class=”font-mono font-semibold text-white”>--</span>
+              <div class="flex items-center justify-between text-sm mb-3 pb-3 border-b border-white/5">
+                <span class="text-muted/70">采样窗口</span>
+                <span id="realtime-window-info" class="font-mono font-semibold text-white">--</span>
               </div>
-              <div class=”flex items-start gap-2 text-xs text-muted/70”>
-                <i class=”fa fa-info-circle mt-0.5 flex-shrink”></i>
-                <span id=”realtime-detail-text”>点击”开始实时监测”以启动。</span>
+              <div class="flex items-start gap-2 text-xs text-muted/70">
+                <i class="fa fa-info-circle mt-0.5 flex-shrink"></i>
+                <span id="realtime-detail-text">点击”开始实时监测”以启动。</span>
               </div>
             </div>
-            <div class=”glass rounded-2xl p-5 border border-white/5”>
-              <h4 class=”text-xs font-semibold text-muted uppercase tracking-widest mb-3”>当前状态</h4>
+            <div class="glass rounded-2xl p-5 border border-white/5">
+              <h4 class="text-xs font-semibold text-muted uppercase tracking-widest mb-3">当前状态</h4>
               <div
-                class=”text-sm font-bold mb-4”
-                id=”realtime-status-text”
+                class="text-sm font-bold mb-4"
+                id="realtime-status-text"
               >
                 未启动
               </div>
-              <ul class=”space-y-2 text-xs text-muted/60”>
-                <li class=”flex items-start gap-2”>
-                  <span class=”text-accent mt-0.5 flex-shrink”></span>
+              <ul class="space-y-2 text-xs text-muted/60">
+                <li class="flex items-start gap-2">
+                  <span class="text-accent mt-0.5 flex-shrink"></span>
                   <span>启用”立体声混音”可捕获系统音频；仅监听麦克风则使用默认输入</span>
                 </li>
-                <li class=”flex items-start gap-2”>
-                  <span class=”text-accent mt-0.5 flex-shrink”></span>
+                <li class="flex items-start gap-2">
+                  <span class="text-accent mt-0.5 flex-shrink"></span>
                   <span>低通滤波 → 峰值检测 → 间隔统计 → BPM 候选融合（三连音判定）</span>
                 </li>
               </ul>
