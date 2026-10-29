@@ -77,6 +77,14 @@ namespace BPMAnalyzer
 
 		public WaveFile(string fileName)
 		{
+			// 校验路径，拒绝路径遍历攻击
+			if(string.IsNullOrWhiteSpace(fileName))
+				throw new ArgumentException("文件名不能为空");
+			if(fileName.IndexOf("..",StringComparison.Ordinal)>=0)
+				throw new ArgumentException("文件名不允许包含路径遍历字符");
+			var fullPath=Path.GetFullPath(fileName);
+			if(!fullPath.StartsWith(Directory.GetCurrentDirectory(),StringComparison.OrdinalIgnoreCase))
+				throw new ArgumentException("只允许读取当前工作目录内的音频文件");
 			var stream=File.OpenRead(fileName);
 			RiffHeader=RiffHeader.GetRiffHeader(stream);
 			var pos=stream.Position;
