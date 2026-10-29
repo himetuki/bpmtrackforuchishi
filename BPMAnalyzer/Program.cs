@@ -85,7 +85,7 @@ namespace BPMAnalyzer
 			var fullPath=Path.GetFullPath(fileName);
 			if(!fullPath.StartsWith(Directory.GetCurrentDirectory(),StringComparison.OrdinalIgnoreCase))
 				throw new ArgumentException("只允许读取当前工作目录内的音频文件");
-			var stream=File.OpenRead(fileName);
+			var stream=File.OpenRead(fullPath);
 			RiffHeader=RiffHeader.GetRiffHeader(stream);
 			var pos=stream.Position;
 			FormatChunk=FormatChunk.GetFormatChunk(stream);
