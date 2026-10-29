@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BPM 分析器 - 听歌识BPM</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"
+      rel="stylesheet"
+    />
+    <!-- 统一的 Tailwind 配置 -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#1a1a2e",
+              secondary: "#fb923c",
+              accent: "#f97316",
+              dark: "#0f0f23",
+              light: "#ffffff",
+            },
+          },
+        },
+      };
+    </script>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .text-shadow {
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .glass {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .gradient-border {
+          position: relative;
+          border-radius: 0.5rem;
+          z-index: 0;
+        }
+        .gradient-border::before {
+          content: "";
+          position: absolute;
+          top: -2px;
+          left: -2px;
+          right: -2px;
+          bottom: -2px;
+          background: linear-gradient(45deg, #f97316, #fb923c);
+          border-radius: 0.75rem;
+          z-index: -1;
+        }
+        .wave-animation {
+          animation: wave 1.5s infinite ease-in-out;
+        }
+        @keyframes wave {
+          0%,
+          100% {
+            transform: scaleY(1);
+          }
+          50% {
+            transform: scaleY(1.2);
+          }
+        }
+        .beat-bar {
+          @apply bg-secondary h-full w-1 mx-0.5 rounded-full;
+          animation: beat 1s infinite ease-in-out;
+        }
+        @keyframes beat {
+          0%,
+          100% {
+            opacity: 0.5;
+          }
+          50% {
+            opacity: 1;
+          }
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-primary text-light min-h-screen flex flex-col">
+    <!-- 顶部导航栏 -->
+    <header
+      class="bg-dark bg-opacity-80 backdrop-blur-md sticky top-0 z-50 border-b border-secondary border-opacity-30"
+    >
+      <div
+        class="container mx-auto px-4 py-3 flex justify-between items-center"
+      >
+        <div class="flex items-center space-x-3">
+          <i class="fa fa-music text-secondary text-2xl"></i>
+          <h1 class="text-2xl font-bold text-secondary">BPM 分析器</h1>
+        </div>
+        <nav>
+          <ul class="flex space-x-6">
+            <li>
+              <a
+                href="#"
+                class="text-light hover:text-secondary transition-colors"
+                >首页</a
+              >
+            </li>
+            <li>
+              <a
+                href="#"
+                onclick="toggleHistorySection()"
+                class="text-light hover:text-secondary transition-colors cursor-pointer"
+                >历史记录</a
+              >
+            </li>
+            <li>
+              <a
+                href="#"
+                class="text-light hover:text-secondary transition-colors"
+                >关于</a
+              >
+            </li>
+            <li>
+              <a
+                href="#"
+                class="text-light hover:text-secondary transition-colors"
+                >帮助</a
+              >
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+      <!-- 英雄区 -->
+      <section class="relative rounded-2xl overflow-hidden mb-10">
+        <div class="absolute inset-0 z-0">
+          <div
+            class="w-full h-full bg-gradient-to-r from-primary to-dark opacity-80"
+          ></div>
+        </div>
+        <div
+          class="relative z-10 px-8 py-16 md:py-24 flex flex-col md:flex-row items-center justify-between"
+        >
+          <div class="md:w-1/2 mb-8 md:mb-0">
+            <h2
+              class="text-4xl md:text-5xl font-bold text-light mb-4 text-shadow"
+            >
+              听歌识BPM
+            </h2>
+            <p class="text-xl text-light opacity-90 mb-6">
+              上传WAV、MP3或FLAC音频文件，快速分析音乐的每分钟节拍数（BPM）
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4">
+              <label
+                for="fileInput"
+                class="bg-secondary text-primary px-6 py-3 rounded-full font-medium hover:bg-accent transition-colors cursor-pointer text-center"
+              >
+                <i class="fa fa-upload mr-2"></i>选择音频文件
+              </label>
+              <input
+                type="file"
+                id="fileInput"
+                accept=".wav,.mp3,.flac"
+                class="hidden"
+              />
+              <button
+                onclick="analyze()"
+                class="bg-accent text-light px-6 py-3 rounded-full font-medium hover:bg-secondary transition-colors"
+              >
+                <i class="fa fa-play mr-2"></i>开始分析
+              </button>
+            </div>
+          </div>
+          <div class="md:w-2/5 flex justify-center">
+            <div class="glass p-8 rounded-2xl text-center">
+              <div
+                class="text-6xl font-bold text-secondary mb-2"
+                id="current-bpm"
+              >
+                --
+              </div>
+              <div class="text-lg text-light opacity-80">当前BPM</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 音频播放控制 -->
+      <section class="mb-10">
+        <div class="bg-dark rounded-xl p-6 shadow-lg">
+          <h3 class="text-xl font-bold text-secondary mb-4">音频播放控制</h3>
+          <div class="flex justify-center space-x-4">
+            <button
+              id="play-btn"
+              onclick="playAudio()"
+              class="bg-secondary text-primary px-6 py-3 rounded-full font-medium hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <i class="fa fa-play mr-2"></i>播放
+            </button>
+            <button
+              id="pause-btn"
+              onclick="pauseAudio()"
+              class="bg-gray-600 text-light px-6 py-3 rounded-full font-medium hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <i class="fa fa-pause mr-2"></i>暂停
+            </button>
+            <button
+              id="stop-btn"
+              onclick="stopAudio()"
+              class="bg-red-600 text-light px-6 py-3 rounded-full font-medium hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <i class="fa fa-stop mr-2"></i>停止
+            </button>
+          </div>
+          <div class="mt-4 text-center">
+            <div id="playback-status" class="text-light opacity-80">
+              未加载音频
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BPM分析结果 -->
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <!-- BPM数值 -->
+        <div class="bg-dark rounded-xl p-6 shadow-lg">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-secondary">主BPM</h3>
+            <div
+              class="px-3 py-1 rounded-full bg-green-900 text-green-400 text-sm"
+            >
+              高置信度
+            </div>
+          </div>
+          <div class="flex items-center justify-center h-40">
+            <div class="text-center">
+              <div
+                class="text-5xl font-bold text-secondary mb-2"
+                id="bpm-display"
+              >
+                120
+              </div>
+              <div class="text-sm text-light opacity-70">BPM</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 候选BPM显示 -->
+        <div class="bg-dark rounded-xl p-6 shadow-lg">
+          <h3 class="text-xl font-bold text-secondary mb-4">候选BPM</h3>
+          <div id="candidates-display" class="space-y-2">
+            <!-- 候选BPM将通过JavaScript动态添加 -->
+          </div>
+        </div>
+
+        <!-- 音频信息 -->
+        <div class="bg-dark rounded-xl p-6 shadow-lg">
+          <h3 class="text-xl font-bold text-secondary mb-4">音频信息</h3>
+          <div id="audio-info" class="text-light opacity-80">
+            请上传WAV、MP3或FLAC音频文件开始分析
+          </div>
+        </div>
+      </section>
+
+      <!-- 多算法BPM分析结果 -->
+      <section class="mb-10">
+        <h3 class="text-2xl font-bold text-secondary mb-6">多算法BPM分析</h3>
+        <div class="grid grid-cols-1 gap-6">
+          <!-- 自相关算法 -->
+          <div class="bg-dark rounded-xl p-6 shadow-lg">
+            <h4 class="text-lg font-bold text-secondary mb-4">自相关算法</h4>
+            <div class="flex items-center justify-center h-32">
+              <div class="text-center">
+                <div
+                  class="text-3xl font-bold text-accent mb-1"
+                  id="autocorr-bpm"
+                >
+                  --
+                </div>
+                <div class="text-sm text-light opacity-70">BPM</div>
+                <div
+                  class="text-xs text-light opacity-60 mt-1"
+                  id="autocorr-confidence"
+                >
+                  --
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 历史记录区域 -->
+      <section id="history-section" class="mb-10 hidden">
+        <div class="bg-dark rounded-xl p-6 shadow-lg">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-secondary">测定历史记录</h3>
+            <button
+              onclick="clearHistory()"
+              class="bg-red-600 text-light px-4 py-2 rounded-full text-sm hover:bg-red-500 transition-colors"
+            >
+              <i class="fa fa-trash mr-1"></i>清除历史
+            </button>
+          </div>
+          <div id="history-list" class="space-y-4">
+            <!-- 历史记录将通过JavaScript动态添加 -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 使用指南 -->
+      <section class="mb-10">
+        <div class="bg-dark rounded-xl p-6 shadow-lg">
+          <h3 class="text-xl font-bold text-secondary mb-6">使用指南</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 class="text-lg font-semibold text-secondary mb-3">
+                <i class="fa fa-upload mr-2"></i>基本使用
+              </h4>
+              <ul class="space-y-2 text-light opacity-80">
+                <li class="flex items-start">
+                  <span class="text-secondary mr-2">1.</span>
+                  点击"选择音频文件"按钮上传WAV、MP3或FLAC格式的音频文件
+                </li>
+                <li class="flex items-start">
+                  <span class="text-secondary mr-2">2.</span>
+                  选择文件后会自动开始BPM分析
+                </li>
+                <li class="flex items-start">
+                  <span class="text-secondary mr-2">3.</span>
+                  分析完成后会自动开始播放音频
+                </li>
+                <li class="flex items-start">
+                  <span class="text-secondary mr-2">4.</span>
+                  查看主BPM和候选BPM结果（包含置信度），以及自相关算法分析结果
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-secondary mb-3">
+                <i class="fa fa-play-circle mr-2"></i>播放控制
+              </h4>
+              <ul class="space-y-2 text-light opacity-80">
+                <li class="flex items-start">
+                  <span class="text-secondary mr-2">•</span>
+                  使用播放/暂停/停止按钮控制音频播放
+                </li>
+                <li class="flex items-start">
+                  <span class="text-secondary mr-2">•</span>
+                  分析完成后会自动开始播放音乐
+                </li>
+                <li class="flex items-start">
+                  <span class="text-secondary mr-2">•</span>
+                  支持暂停和恢复播放
+                </li>
+              </ul>
+              <h4 class="text-lg font-semibold text-secondary mb-3 mt-4">
+                <i class="fa fa-history mr-2"></i>历史记录
+              </h4>
+              <ul class="space-y-2 text-light opacity-80">
+                <li class="flex items-start">
+                  <span class="text-secondary mr-2">•</span>
+                  点击导航栏的"历史记录"查看过往分析结果
+                </li>
+                <li class="flex items-start">
+                  <span class="text-secondary mr-2">•</span>
+                  每次分析都会自动保存到本地历史
+                </li>
+                <li class="flex items-start">
+                  <span class="text-secondary mr-2">•</span>
+                  可清除所有历史记录
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="mt-6 p-4 bg-primary bg-opacity-50 rounded-lg">
+            <h4 class="text-lg font-semibold text-secondary mb-2">
+              <i class="fa fa-info-circle mr-2"></i>注意事项
+            </h4>
+            <ul class="space-y-1 text-light opacity-80 text-sm">
+              <li>• 支持WAV、MP3和FLAC格式音频文件</li>
+              <li>• 选择文件后会自动开始分析，无需点击"开始分析"按钮</li>
+              <li>• 候选BPM旁显示的百分比为置信度，数值越高越可靠</li>
+              <li>• 系统使用自相关算法进行BPM检测，可与主算法相互验证结果</li>
+              <li>• 分析结果会自动保存到浏览器本地存储</li>
+              <li>• 建议使用高质量的音频文件获得更准确的BPM结果</li>
+              <li>• 历史记录最多保存50条，最旧的记录会被自动删除</li>
+              <li>
+                ☞
+                有时候置信度第一与第二的均值是实际的BPM结果（往往检测的是实际值的谐波）
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 底部区域 -->
+    <footer class="bg-dark border-t border-secondary border-opacity-30 py-6">
+      <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+          <div class="mb-4 md:mb-0">
+            <p class="text-light opacity-70">
+              &copy; 2025 BPM 分析器. 保留所有权利.
+            </p>
+          </div>
+          <div class="flex space-x-4">
+            <a
+              href="#"
+              class="text-light opacity-70 hover:text-secondary transition-colors"
+              title="GitHub"
+            >
+              <i class="fa fa-github"></i>
+            </a>
+            <a
+              href="#"
+              class="text-light opacity-70 hover:text-secondary transition-colors"
+              title="Twitter"
+            >
+              <i class="fa fa-twitter"></i>
+            </a>
+            <a
+              href="#"
+              class="text-light opacity-70 hover:text-secondary transition-colors"
+              title="Email"
+            >
+              <i class="fa fa-envelope"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // 全局变量
+      let audioContext;
+      let audioBuffer = null;
+      let bufferSource = null;
+      let isPlaying = false;
+      let isPaused = false;
+      let currentTime = 0;
+      let playStartTime = 0;
+      let bpmHistory = []; // 存储历史记录
+
+      // DOM元素
+      const playBtn = document.getElementById("play-btn");
+      const pauseBtn = document.getElementById("pause-btn");
+      const stopBtn = document.getElementById("stop-btn");
+      const playbackStatus = document.getElementById("playback-status");
+      const historySection = document.getElementById("history-section");
+      const historyList = document.getElementById("history-list");
+
+      // 切换历史记录区域显示
+      function toggleHistorySection() {
+        if (historySection.classList.contains("hidden")) {
+          historySection.classList.remove("hidden");
+          updateHistoryList();
+        } else {
+          historySection.classList.add("hidden");
+        }
+      }
+
+      // 保存分析结果到历史记录
+      function saveAnalysisResult(
+        fileName,
+        mainBpm,
+        candidates,
+        fileSize,
+        sampleRate
+      ) {
+        const result = {
+          id: Date.now(),
+          fileName: fileName,
+          mainBpm: mainBpm,
+          candidates: candidates,
+          fileSize: fileSize,
+          sampleRate: sampleRate,
+          timestamp: new Date().toLocaleString("zh-CN"),
+        };
+
+        bpmHistory.unshift(result);
+
+        // 限制历史记录数量，最多保存50条
+        if (bpmHistory.length > 50) {
+          bpmHistory = bpmHistory.slice(0, 50);
+        }
+
+        // 保存到localStorage
+        saveHistoryToLocalStorage();
+
+        // 更新历史记录列表
+        updateHistoryList();
+      }
+
+      // 从localStorage加载历史记录
+      function loadHistoryFromLocalStorage() {
+        const savedHistory = localStorage.getItem("bpmHistory");
+        if (savedHistory) {
+          try {
+            bpmHistory = JSON.parse(savedHistory);
+          } catch (error) {
+            console.error("加载历史记录失败:", error);
+            bpmHistory = [];
+          }
+        }
+      }
+
+      // 保存历史记录到localStorage
+      function saveHistoryToLocalStorage() {
+        try {
+          localStorage.setItem("bpmHistory", JSON.stringify(bpmHistory));
+        } catch (error) {
+          console.error("保存历史记录失败:", error);
+        }
+      }
+
+      // 更新历史记录列表
+      function updateHistoryList() {
+        if (bpmHistory.length === 0) {
+          historyList.innerHTML =
+            '<p class="text-light opacity-70 text-center">暂无历史记录</p>';
+          return;
+        }
+
+        historyList.innerHTML = "";
+        bpmHistory.forEach((record, index) => {
+          const historyItem = document.createElement("div");
+          historyItem.className = "bg-primary bg-opacity-50 p-4 rounded-lg";
+          historyItem.innerHTML = `
+            <div class="flex justify-between items-start mb-2">
+              <div class="font-bold text-secondary">${record.fileName}</div>
+              <div class="text-sm text-light opacity-70">${
+                record.timestamp
+              }</div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mb-2">
+              <div>
+                <span class="text-secondary font-bold">${record.mainBpm}</span>
+                <span class="text-sm text-light opacity-80"> BPM</span>
+              </div>
+              <div class="text-sm text-light opacity-80">
+                ${formatFileSize(record.fileSize)} | ${record.sampleRate}Hz
+              </div>
+            </div>
+            <div class="text-sm text-light opacity-70">
+              候选: ${record.candidates
+                .map((c) => `${c.bpm} BPM (${c.confidence}%)`)
+                .join(", ")}
+            </div>
+          `;
+          historyList.appendChild(historyItem);
+        });
+      }
+
+      // 清除历史记录
+      function clearHistory() {
+        if (confirm("确定要清除所有历史记录吗？此操作不可撤销。")) {
+          bpmHistory = [];
+          saveHistoryToLocalStorage();
+          updateHistoryList();
+        }
+      }
+
+      // 播放音频
+      function playAudio() {
+        if (!audioBuffer) return;
+
+        if (!audioContext) {
+          audioContext = new (window.AudioContext ||
+            window.webkitAudioContext)();
+        }
+
+        if (isPaused && bufferSource) {
+          // 继续播放
+          bufferSource = audioContext.createBufferSource();
+          bufferSource.buffer = audioBuffer;
+          bufferSource.connect(audioContext.destination);
+          bufferSource.start(0, currentTime);
+          playStartTime = audioContext.currentTime - currentTime;
+          bufferSource.onended = () => {
+            isPlaying = false;
+            isPaused = false;
+            currentTime = 0;
+            updatePlaybackButtons();
+          };
+          isPaused = false;
+          isPlaying = true;
+        } else {
+          // 从头开始播放
+          if (bufferSource) {
+            bufferSource.stop();
+          }
+          bufferSource = audioContext.createBufferSource();
+          bufferSource.buffer = audioBuffer;
+          bufferSource.connect(audioContext.destination);
+          bufferSource.start();
+          playStartTime = audioContext.currentTime;
+          bufferSource.onended = () => {
+            isPlaying = false;
+            isPaused = false;
+            currentTime = 0;
+            updatePlaybackButtons();
+          };
+          isPlaying = true;
+          isPaused = false;
+        }
+
+        updatePlaybackButtons();
+      }
+
+      // 暂停音频
+      function pauseAudio() {
+        if (!isPlaying || isPaused) return;
+
+        if (bufferSource) {
+          bufferSource.stop();
+          currentTime = audioContext.currentTime - playStartTime;
+          isPaused = true;
+          isPlaying = false;
+        }
+
+        updatePlaybackButtons();
+      }
+
+      // 停止音频
+      function stopAudio() {
+        if (bufferSource) {
+          bufferSource.stop();
+        }
+        isPlaying = false;
+        isPaused = false;
+        currentTime = 0;
+        playStartTime = 0;
+
+        updatePlaybackButtons();
+      }
+
+      // 更新播放控制按钮状态
+      function updatePlaybackButtons() {
+        const hasAudio = audioBuffer !== null;
+
+        playBtn.disabled = !hasAudio || isPlaying;
+        pauseBtn.disabled = !hasAudio || !isPlaying || isPaused;
+        stopBtn.disabled = !hasAudio;
+
+        if (!hasAudio) {
+          playbackStatus.textContent = "未加载音频";
+        } else if (isPlaying && !isPaused) {
+          playbackStatus.textContent = "正在播放";
+        } else if (isPaused) {
+          playbackStatus.textContent = "已暂停";
+        } else {
+          playbackStatus.textContent = "已停止";
+        }
+      }
+
+      // 初始化
+      function init() {
+        updatePlaybackButtons();
+        loadHistoryFromLocalStorage();
+
+        // 添加文件选择自动分析功能
+        const fileInput = document.getElementById("fileInput");
+        fileInput.addEventListener("change", function () {
+          if (this.files.length > 0) {
+            // 延迟一点时间确保文件完全加载
+            setTimeout(() => {
+              analyze();
+            }, 100);
+          }
+        });
+      }
+
+      // 页面加载完成后初始化
+      window.addEventListener("DOMContentLoaded", init);
+
+      async function analyze() {
+        const fileInput = document.getElementById("fileInput");
+        const file = fileInput.files[0];
+        if (!file) {
+          alert("请选择一个音频文件。");
+          return;
+        }
+
+        // 检查文件格式
+        const allowedFormats = [".wav", ".mp3", ".flac"];
+        const fileExtension = "." + file.name.split(".").pop().toLowerCase();
+        if (!allowedFormats.includes(fileExtension)) {
+          alert("请选择WAV、MP3或FLAC格式的音频文件。");
+          return;
+        }
+
+        console.log("=== BPM分析开始 ===");
+        console.log("文件信息:", {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          extension: fileExtension,
+        });
+
+        const arrayBuffer = await file.arrayBuffer();
+        const audioContext = new (window.AudioContext ||
+          window.webkitAudioContext)();
+        let decodedAudioBuffer;
+
+        try {
+          decodedAudioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        } catch (error) {
+          console.error("音频解码失败:", error);
+          alert(
+            `不支持的文件格式或文件损坏: ${error.message}\n请尝试使用WAV格式的文件。`
+          );
+          return;
+        }
+
+        console.log("音频解码成功:", {
+          duration: decodedAudioBuffer.duration,
+          sampleRate: decodedAudioBuffer.sampleRate,
+          numberOfChannels: decodedAudioBuffer.numberOfChannels,
+          length: decodedAudioBuffer.length,
+        });
+
+        // 保存音频缓冲区
+        audioBuffer = decodedAudioBuffer;
+
+        // Assume mono, take first channel
+        const data = decodedAudioBuffer.getChannelData(0);
+        const sampleRate = decodedAudioBuffer.sampleRate;
+
+        const frameSize = 1024;
+        const frameCount = sampleRate / frameSize;
+        const dataLength = data.length;
+        const sampleCount = Math.floor(dataLength / frameSize / 2);
+
+        console.log("音频处理参数:", {
+          frameSize,
+          frameCount,
+          dataLength,
+          sampleCount,
+          sampleRate,
+        });
+
+        // Calculate volume (RMS)
+        const volume = [];
+        for (let i = 0; i < sampleCount; i++) {
+          let sum = 0;
+          for (let j = 0; j < frameSize; j++) {
+            const sample = data[i * frameSize + j];
+            sum += sample * sample;
+          }
+          volume.push(Math.sqrt(sum / frameSize));
+        }
+
+        console.log("音量计算完成，样本数量:", volume.length);
+        console.log("音量统计:", {
+          min: Math.min(...volume),
+          max: Math.max(...volume),
+          avg: volume.reduce((a, b) => a + b, 0) / volume.length,
+        });
+
+        // Calculate differences
+        const diff = [];
+        let prev = 0;
+        for (const v of volume) {
+          diff.push(Math.max(v - prev, 0));
+          prev = v;
+        }
+
+        console.log("差异计算完成，差异数组长度:", diff.length);
+        console.log("差异统计:", {
+          min: Math.min(...diff),
+          max: Math.max(...diff),
+          avg: diff.reduce((a, b) => a + b, 0) / diff.length,
+        });
+
+        // DFT
+        const r = [];
+        console.log("开始DFT分析，分析范围: BPM 60-240");
+        for (let i = 0; i < 181; i++) {
+          const freq = (i + 60) / 60.0;
+          const theta = (2 * Math.PI * freq) / frameCount;
+          let cosSum = 0;
+          let sinSum = 0;
+          for (let index = 0; index < diff.length; index++) {
+            const window =
+              0.5 - 0.5 * Math.cos((2 * Math.PI * index) / diff.length);
+            cosSum += window * Math.cos(theta * index) * diff[index];
+            sinSum += window * Math.sin(theta * index) * diff[index];
+          }
+          cosSum /= sampleCount;
+          sinSum /= sampleCount;
+          r.push({
+            A: cosSum,
+            B: sinSum,
+            R: Math.sqrt(cosSum * cosSum + sinSum * sinSum),
+          });
+        }
+
+        console.log("DFT分析完成，频率响应数组长度:", r.length);
+        const rValues = r.map((item) => item.R);
+        console.log("DFT结果统计:", {
+          min: Math.min(...rValues),
+          max: Math.max(...rValues),
+          avg: rValues.reduce((a, b) => a + b, 0) / rValues.length,
+        });
+
+        // Find peaks
+        const peaks = findPeaks(
+          r.map((obj) => obj.R),
+          3
+        );
+
+        console.log("峰值检测结果:", peaks);
+        console.log("峰值详细信息:");
+        peaks.forEach((peak, index) => {
+          const bpm = peak.index + 60;
+          console.log(
+            `峰值 ${index + 1}: BPM ${bpm}, 强度 ${peak.value.toFixed(
+              6
+            )}, 索引 ${peak.index}`
+          );
+        });
+
+        // 更新显示
+        const currentBpmDisplay = document.getElementById("current-bpm");
+        const bpmDisplay = document.getElementById("bpm-display");
+        const candidatesDisplay = document.getElementById("candidates-display");
+        const audioInfo = document.getElementById("audio-info");
+
+        if (peaks.length > 0) {
+          const mainBpm = peaks[0].index + 60;
+          currentBpmDisplay.textContent = mainBpm;
+          bpmDisplay.textContent = mainBpm;
+        }
+
+        candidatesDisplay.innerHTML = "";
+        let candidates = [];
+        const maxPeakValue = peaks.length > 0 ? peaks[0].value : 1; // 用于计算置信度
+
+        console.log("置信度计算开始，最大峰值强度:", maxPeakValue);
+        console.log("候选BPM计算:");
+
+        for (let i = 0; i < peaks.length; i++) {
+          const bpm = peaks[i].index + 60;
+          const confidence = Math.round((peaks[i].value / maxPeakValue) * 100); // 置信度百分比
+          const theta = Math.atan2(r[peaks[i].index].B, r[peaks[i].index].A);
+          const adjustedTheta = theta < 0 ? theta + 2 * Math.PI : theta;
+          const peakFreq = bpm / 60;
+          const startTime = adjustedTheta / (2 * Math.PI * peakFreq);
+          const startBeat = adjustedTheta / (2 * Math.PI);
+
+          console.log(
+            `候选 ${i + 1}: BPM ${bpm}, 原始强度 ${peaks[i].value.toFixed(
+              6
+            )}, 置信度 ${confidence}%, 首次节拍时间 ${startTime.toFixed(2)}秒`
+          );
+
+          candidates.push({
+            bpm: bpm,
+            confidence: confidence,
+            startTime: startTime,
+            startBeat: startBeat,
+          });
+          candidatesDisplay.innerHTML += `<div class="bg-primary bg-opacity-50 p-3 rounded-lg">
+                    <div class="flex justify-between items-start mb-2">
+                      <div class="font-bold text-secondary">候选 ${
+                        i + 1
+                      }: ${bpm} BPM</div>
+                      <div class="px-2 py-1 rounded-full bg-green-900 text-green-400 text-xs">${confidence}%</div>
+                    </div>
+                    <div class="text-sm text-light opacity-80">首次节拍时间: ${startTime.toFixed(
+                      2
+                    )} 秒</div>
+                    <div class="text-sm text-light opacity-80">首次节拍: ${startBeat.toFixed(
+                      2
+                    )} 拍</div>
+                </div>`;
+        }
+
+        console.log("=== BPM分析完成 ===");
+        console.log("最终结果:", {
+          主BPM: peaks.length > 0 ? peaks[0].index + 60 : "无",
+          候选数量: peaks.length,
+          所有候选: candidates.map((c) => `${c.bpm} BPM (${c.confidence}%)`),
+        });
+
+        // 执行多算法BPM检测
+        console.log("开始多算法BPM检测...");
+
+        try {
+          // 自相关算法
+          const autocorrResult = detectBPMAutocorrelation(data, sampleRate);
+          document.getElementById("autocorr-bpm").textContent =
+            autocorrResult.bpm;
+          document.getElementById(
+            "autocorr-confidence"
+          ).textContent = `置信度: ${autocorrResult.confidence}%`;
+        } catch (error) {
+          console.error("自相关算法出错:", error);
+          document.getElementById("autocorr-bpm").textContent = "--";
+          document.getElementById("autocorr-confidence").textContent = "错误";
+        }
+
+        console.log("多算法检测完成");
+
+        audioInfo.textContent = `文件名: ${file.name}, 大小: ${formatFileSize(
+          file.size
+        )}, 采样率: ${sampleRate} Hz`;
+
+        // 更新播放控制按钮状态
+        updatePlaybackButtons();
+
+        // 保存分析结果到历史记录
+        if (peaks.length > 0) {
+          const mainBpm = peaks[0] + 60;
+          saveAnalysisResult(
+            file.name,
+            mainBpm,
+            candidates,
+            file.size,
+            sampleRate
+          );
+        }
+
+        // 分析完成后自动播放音频
+        setTimeout(() => {
+          playAudio();
+        }, 500); // 延迟500ms确保UI更新完成
+      }
+
+      function findPeaks(graph, count) {
+        console.log(
+          "峰值检测开始，图表长度:",
+          graph.length,
+          "请求峰值数量:",
+          count
+        );
+        const peaks = [];
+        for (let i = 1; i < graph.length - 1; i++) {
+          if (graph[i] > graph[i - 1] && graph[i] > graph[i + 1]) {
+            peaks.push({ value: graph[i], index: i });
+          }
+        }
+        console.log("找到的原始峰值数量:", peaks.length);
+        peaks.sort((a, b) => b.value - a.value);
+        const topPeaks = peaks.slice(0, count);
+        console.log("排序后的前", count, "个峰值:", topPeaks);
+        return topPeaks;
+      }
+
+      // 格式化文件大小
+      function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + " B";
+        else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + " KB";
+        else return (bytes / 1048576).toFixed(2) + " MB";
+      }
+
+      // 自相关BPM检测算法
+      function detectBPMAutocorrelation(data, sampleRate) {
+        console.log("=== 自相关算法开始 ===");
+
+        // 计算自相关函数
+        const frameSize = 1024;
+        const minLag = Math.floor((sampleRate * 60) / 240 / frameSize);
+        const maxLag = Math.floor((sampleRate * 60) / 60 / frameSize);
+        const windowSize = Math.floor(sampleRate * 2); // 2秒窗口
+
+        console.log("自相关参数:", { minLag, maxLag, windowSize });
+
+        // 使用音频数据的RMS包络进行自相关
+        const envelope = [];
+        for (let i = 0; i < data.length - frameSize; i += frameSize) {
+          let sum = 0;
+          for (let j = 0; j < frameSize; j++) {
+            sum += data[i + j] * data[i + j];
+          }
+          envelope.push(Math.sqrt(sum / frameSize));
+        }
+
+        console.log("包络计算完成，长度:", envelope.length);
+
+        // 计算自相关
+        const correlations = [];
+        for (
+          let lag = minLag;
+          lag <= Math.min(maxLag, envelope.length - 1);
+          lag++
+        ) {
+          let sum = 0;
+          let count = 0;
+          for (let i = 0; i < envelope.length - lag; i++) {
+            sum += envelope[i] * envelope[i + lag];
+            count++;
+          }
+          correlations.push({ lag, correlation: sum / count });
+        }
+
+        console.log("自相关计算完成，相关性数组长度:", correlations.length);
+
+        // 找到最大相关性的延迟
+        let maxCorr = -1;
+        let bestLag = minLag;
+        correlations.forEach((item) => {
+          if (item.correlation > maxCorr) {
+            maxCorr = item.correlation;
+            bestLag = item.lag;
+          }
+        });
+
+        const bpm = Math.round((60 * sampleRate) / (bestLag * frameSize));
+        let confidence = Math.round(maxCorr * 100);
+        confidence = Math.max(0, Math.min(100, confidence));
+
+        console.log("自相关结果:", { bestLag, maxCorr, bpm, confidence });
+
+        return { bpm, confidence };
+      }
+    </script>
+  </body>
+</html>
