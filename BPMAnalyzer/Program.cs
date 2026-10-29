@@ -75,30 +75,23 @@ namespace BPMAnalyzer
 		public DataChunk DataChunk{get;private set;}
 		public short[] Data{get;private set;}
 
-		public WaveFile(string fileName)
+		public WaveFile(byte[] fileBytes)
 		{
-			// 校验路径，拒绝路径遍历攻击
-			if(string.IsNullOrWhiteSpace(fileName))
-				throw new ArgumentException("文件名不能为空");
-			var safeName=Path.GetFileName(fileName);
-			if(string.IsNullOrEmpty(safeName)||safeName!=fileName)
-				throw new ArgumentException("文件名不允许包含路径");
-			var fullPath=Path.Combine(Directory.GetCurrentDirectory(),safeName);
-			var stream=File.OpenRead(fullPath);
-			RiffHeader=RiffHeader.GetRiffHeader(stream);
-			var pos=stream.Position;
-			FormatChunk=FormatChunk.GetFormatChunk(stream);
-			stream.Position=pos+FormatChunk.Size+8;
-			DataChunk=DataChunk.GetDataChunk(stream);
-			if(stream.Length<12+8+FormatChunk.Size+8+DataChunk.Size) throw new InvalidDataException("音频文件格式错误");
-			var waveDataStream=new BinaryReader(stream);
-			Data=new short[DataChunk.Size/2];
-			unsafe{
-				fixed(short* ptr=&Data[0])
-					using(var unmanagedStream=new UnmanagedMemoryStream((byte*)ptr,DataChunk.Size,DataChunk.Size,FileAccess.Write))
-						stream.CopyTo(unmanagedStream);
+			using(var stream=new MemoryStream(fileBytes))
+			{
+				RiffHeader=RiffHeader.GetRiffHeader(stream);
+				var pos=stream.Position;
+				FormatChunk=FormatChunk.GetFormatChunk(stream);
+				stream.Position=pos+FormatChunk.Size+8;
+				DataChunk=DataChunk.GetDataChunk(stream);
+				if(stream.Length<12+8+FormatChunk.Size+8+DataChunk.Size) throw new InvalidDataException("音频文件格式错误");
+				Data=new short[DataChunk.Size/2];
+				unsafe{
+					fixed(short* ptr=&Data[0])
+						using(var unmanagedStream=new UnmanagedMemoryStream((byte*)ptr,DataChunk.Size,DataChunk.Size,FileAccess.Write))
+							stream.CopyTo(unmanagedStream);
+				}
 			}
-			stream.Dispose();
 		}
 
 		public void Dispose()
@@ -132,7 +125,20 @@ namespace BPMAnalyzer
 				return;
 			}
 
-			var waveFile=new WaveFile(args[0]);
+			// 通过目录列举匹配文件, 避免直接使用用户输入构造路径
+			var targetName=Path.GetFileName(args[0]);
+			if(string.IsNullOrEmpty(targetName)||targetName!=args[0]){
+				Console.WriteLine("错误: 文件名不允许包含路径");
+				return;
+			}
+			var matchedPath=Directory.GetFiles(Directory.GetCurrentDirectory())
+				.FirstOrDefault(f=>Path.GetFileName(f)==targetName);
+			if(matchedPath==null){
+				Console.WriteLine("错误: 当前目录下未找到文件: {0}",targetName);
+				return;
+			}
+			var fileBytes=File.ReadAllBytes(matchedPath);
+			var waveFile=new WaveFile(fileBytes);
 			
 			const int frameSize=1024;
 			var frameCount=(double)waveFile.FormatChunk.SamplesPerSecond/frameSize;
