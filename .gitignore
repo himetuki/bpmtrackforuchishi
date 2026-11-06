@@ -109,3 +109,6 @@ Desktop.ini
 # 安全扫描工具缓存
 .mimosa/
 **/.mimosa/
+
+# 哈希驱动的前端视觉预览稿（本地生成，不入库）
+/design-previews/
