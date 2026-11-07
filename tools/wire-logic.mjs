@@ -115,6 +115,45 @@ button:disabled:hover{transform:none}
 .fa-history::before{content:"↺" !important}
 `;
 
+/* 置信度徽章补丁：原站定义了 setConfidenceBadge()，却从未在任何地方调用，
+   因此主 BPM 卡片上的「置信度 --」永远不变。这里在 saveAnalysisResult()
+   （分析成功后必经、且直接持有 candidates 数组）处补一次显示层接线，
+   不改动原分析算法本身。 */
+const CONFIDENCE_PATCH = `
+<script>
+(function () {
+  const orig = window.saveAnalysisResult;
+  if (typeof orig !== "function") return;
+  window.saveAnalysisResult = function (fileName, mainBpm, candidates, fileSize, sampleRate) {
+    const result = orig.apply(this, arguments);
+    try {
+      if (Array.isArray(candidates) && candidates.length > 0) {
+        const confidence = Math.round(Number(candidates[0].confidence) || 0);
+        const is98 = confidence >= 98;
+        if (typeof window.setConfidenceBadge === "function") {
+          window.setConfidenceBadge(confidence, is98);
+        }
+        // 原函数在 is98 时只写「98%置信度达标」，会把真实数值藏起来；这里显式带上数值
+        const badge = document.getElementById("bpm-confidence-badge");
+        if (badge) badge.textContent = is98
+          ? \`置信度 \${confidence}% · 98%达标\`
+          : \`置信度 \${confidence}%\`;
+        // 原函数有个分支笔误：非 98 时不会隐藏达标徽章，这里显式纠正并写入数值
+        const badge98 = document.getElementById("bpm-confidence-98");
+        if (badge98) {
+          badge98.classList.toggle("hidden", !is98);
+          const num = badge98.querySelector("b");
+          if (num) num.textContent = \`\${confidence}% 达标\`;
+        }
+      }
+    } catch (err) {
+      console.warn("置信度徽章更新失败:", err);
+    }
+    return result;
+  };
+})();
+</script>`;
+
 export function wireLogic(posterHtml) {
   let html = posterHtml;
 
@@ -170,11 +209,11 @@ export function wireLogic(posterHtml) {
 
   /* ---- 主 BPM 结果 ---- */
   rep('<span class="chip" style="color:var(--accent);border-color:var(--accent)">置信度 96%</span>',
-      '<span class="chip" id="bpm-confidence-badge" style="color:var(--accent);border-color:var(--accent)">置信度 --</span>', 'bpm-badge');
+      '<span class="chip" id="bpm-confidence-badge">置信度 --</span>', 'bpm-badge');
   rep('<div class="big-num" style="font-size:calc(var(--fs-base) * var(--ratio) * 3)">128</div>',
       '<div class="big-num" id="bpm-display" style="font-size:calc(var(--fs-base) * var(--ratio) * 3)">--</div>', 'bpm-display');
   rep('<div class="kv"><span>置信度达标</span><b class="hi">98% ✓</b></div>',
-      '<div class="kv hidden" id="bpm-confidence-98"><span>置信度达标</span><b class="hi">98%达标</b></div>', 'bpm-98');
+      '<div class="kv hidden" id="bpm-confidence-98"><b class="hi">98% 达标</b></div>', 'bpm-98');
 
   /* ---- 音频信息：改成脚本写入的容器 ---- */
   rep(`    <div class="kv-list" style="flex-direction:column">
@@ -224,7 +263,7 @@ export function wireLogic(posterHtml) {
   if (!scriptBlock.includes('performLowPassBPMAnalysis') || !scriptBlock.includes('DOMContentLoaded')) {
     throw new Error('提取到的脚本块不含分析逻辑，已中止');
   }
-  rep('</body>', scriptBlock + '\n</body>', 'inject-script');
+  rep('</body>', scriptBlock + CONFIDENCE_PATCH + '\n</body>', 'inject-script');
 
   /* ---- 强校验 ---- */
   const missing = REQUIRED_IDS.filter((id) => !html.includes(`id="${id}"`));
