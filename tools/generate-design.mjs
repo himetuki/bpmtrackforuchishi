@@ -999,14 +999,15 @@ if (isMain) {
   const POSTER = process.argv.includes('--poster');
 
   if (FINAL) {
-    // 定稿：把 DESIGN A / DARK 主题套回带完整功能的主页面，输出到 site/index.html
-    const t = build('A', HASHES.A, { dark: true });
-    const { buildThemedApp } = await import('./apply-theme.mjs');
-    const info = buildThemedApp(t);
-    console.log('DESIGN A · DARK 定稿已生成: site/index.html（保留完整功能）');
+    // 正式版：以 DESIGN A / DARK 视觉稿为本体，把原站完整分析逻辑接进去
+    const t = build('A', HASHES.A, { dark: true, final: true });
+    const poster = renderHTML(t);
+    const { wireLogic } = await import('./wire-logic.mjs');
+    const info = wireLogic(poster);
+    console.log('DESIGN A · DARK 正式版已生成: site/index.html（视觉稿 + 完整分析逻辑）');
     console.log(`  64/64 位已消费 | 深色（MODE 位明暗解释翻转）| 色调档 ${t.tint} | ${t.layout.name} | ${PRESENTS[t.v.PRESENT][0]}`);
     console.log(`  背景 ${t.C.bg.css} / 主色 ${t.C.primary.css} / 墨色 ${t.C.ink.css}`);
-    console.log(`  功能页 body 原样保留: ${info.bodyPreserved} | 元素 id ${info.ids} 个 | onclick ${info.onclicks} 处 | 内联脚本 ${info.scripts} 段`);
+    console.log(`  接入元素 ID ${info.ids} 个 | onclick ${info.handlers} 处 | 分析脚本 ${info.scriptBytes} B | 输出 ${info.bytes} B`);
   } else if (POSTER) {
     // 静态视觉稿（仅留档比对，不作为部署入口）
     mkdirSync(PREVIEW_DIR, { recursive: true });
