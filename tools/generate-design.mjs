@@ -989,28 +989,44 @@ iframe{width:100%;height:640px;border:0;display:block;background:#000}
 }
 
 /* ------------------------------------------------------------------ 主流程 */
-const FINAL = process.argv.includes('--final');
+export { build, HASHES, renderHTML };
 
-if (FINAL) {
-  mkdirSync(SITE_DIR, { recursive: true });
-  const t = build('A', HASHES.A, { dark: true, final: true });
-  writeFileSync(path.join(SITE_DIR, 'index.html'), renderHTML(t), 'utf8');
-  console.log('DESIGN A · DARK 定稿已生成: site/index.html');
-  console.log(`  64/64 位已消费 | ${t.isLight ? '浅色' : '深色'}（MODE 位明暗解释翻转）| 色调档 ${t.tint} | ${t.layout.name} | ${PRESENTS[t.v.PRESENT][0]}`);
-  console.log(`  背景 ${t.C.bg.css} / 主色 ${t.C.primary.css} / 墨色 ${t.C.ink.css}`);
-} else {
-  mkdirSync(PREVIEW_DIR, { recursive: true });
-  const all = Object.entries(HASHES).map(([k, h]) => build(k, h));
-  for (const t of all) {
-    writeFileSync(path.join(PREVIEW_DIR, `design-${t.key}.html`), renderHTML(t), 'utf8');
-    console.log(`DESIGN ${t.key}  ${t.hash.slice(0, 10)}…  64/64 位已消费  |  ${t.isLight ? '浅' : '深'}色 / ${t.layout.name} / ${t.summary.呈现}`);
+const isMain = process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+
+if (isMain) {
+  const FINAL = process.argv.includes('--final');
+  const POSTER = process.argv.includes('--poster');
+
+  if (FINAL) {
+    // 定稿：把 DESIGN A / DARK 主题套回带完整功能的主页面，输出到 site/index.html
+    const t = build('A', HASHES.A, { dark: true });
+    const { buildThemedApp } = await import('./apply-theme.mjs');
+    const info = buildThemedApp(t);
+    console.log('DESIGN A · DARK 定稿已生成: site/index.html（保留完整功能）');
+    console.log(`  64/64 位已消费 | 深色（MODE 位明暗解释翻转）| 色调档 ${t.tint} | ${t.layout.name} | ${PRESENTS[t.v.PRESENT][0]}`);
+    console.log(`  背景 ${t.C.bg.css} / 主色 ${t.C.primary.css} / 墨色 ${t.C.ink.css}`);
+    console.log(`  功能页 body 原样保留: ${info.bodyPreserved} | 元素 id ${info.ids} 个 | onclick ${info.onclicks} 处 | 内联脚本 ${info.scripts} 段`);
+  } else if (POSTER) {
+    // 静态视觉稿（仅留档比对，不作为部署入口）
+    mkdirSync(PREVIEW_DIR, { recursive: true });
+    const t = build('A', HASHES.A, { dark: true, final: true });
+    writeFileSync(path.join(PREVIEW_DIR, 'design-A-dark.html'), renderHTML(t), 'utf8');
+    console.log('深色 A 静态视觉稿已生成: design-previews/design-A-dark.html');
+  } else {
+    mkdirSync(PREVIEW_DIR, { recursive: true });
+    const all = Object.entries(HASHES).map(([k, h]) => build(k, h));
+    for (const t of all) {
+      writeFileSync(path.join(PREVIEW_DIR, `design-${t.key}.html`), renderHTML(t), 'utf8');
+      console.log(`DESIGN ${t.key}  ${t.hash.slice(0, 10)}…  64/64 位已消费  |  ${t.isLight ? '浅' : '深'}色 / ${t.layout.name} / ${t.summary.呈现}`);
+    }
+    writeFileSync(path.join(PREVIEW_DIR, 'index.html'), renderIndex(all), 'utf8');
+    writeFileSync(path.join(PREVIEW_DIR, 'tokens.json'), JSON.stringify(all.map((t) => ({
+      design: t.key, hash: t.hash, codename: t.codename, summary: { ...t.summary, 微交互: MICROS[t.v.MICRO][0] },
+      values: t.v, layout: { name: t.layout.name, cols: t.layout.cols, columns: t.layout.columns, spans: t.layout.spans, order: t.order, prngSeed: t.layout.prngSeed },
+      colors: Object.fromEntries(Object.entries(t.C).map(([k, c]) => [k, c.css])),
+      trace64: t.trace,
+    })), null, 2), 'utf8');
+    console.log('\n已生成 index.html / design-A..D.html / tokens.json（全部位于 design-previews/）');
   }
-  writeFileSync(path.join(PREVIEW_DIR, 'index.html'), renderIndex(all), 'utf8');
-  writeFileSync(path.join(PREVIEW_DIR, 'tokens.json'), JSON.stringify(all.map((t) => ({
-    design: t.key, hash: t.hash, codename: t.codename, summary: { ...t.summary, 微交互: MICROS[t.v.MICRO][0] },
-    values: t.v, layout: { name: t.layout.name, cols: t.layout.cols, columns: t.layout.columns, spans: t.layout.spans, order: t.order, prngSeed: t.layout.prngSeed },
-    colors: Object.fromEntries(Object.entries(t.C).map(([k, c]) => [k, c.css])),
-    trace64: t.trace,
-  })), null, 2), 'utf8');
-  console.log('\n已生成 index.html / design-A..D.html / tokens.json（全部位于 design-previews/）');
 }
